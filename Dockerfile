@@ -1,5 +1,5 @@
-FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat
+FROM node:20-slim AS base
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -47,8 +47,8 @@ ENV GIT_SHA=$GIT_SHA
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs
+RUN useradd --system --uid 1001 nextjs
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
