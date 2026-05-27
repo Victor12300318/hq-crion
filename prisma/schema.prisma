@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model chamadas {
+  call_sid           String   @id @db.VarChar(50)
+  conversation_id    String?  @db.VarChar(100)
+  agent_id           String?  @db.VarChar(50)
+  agent_name         String?  @db.VarChar(100)
+  user_phone         String?  @db.VarChar(20)
+  start_time         DateTime? @db.Timestamp(6)
+  duration_secs      Int?
+  status             String?  @db.VarChar(20)
+  termination_reason String?  @db.VarChar(100)
+  call_successful    String?  @db.VarChar(20)
+  summary            String?
+  cost_cents         Int?
+
+  dados_extraidos    chamadas_dados_extraidos?
+  mensagens          chamadas_mensagens[]
+  auditoria_qa       chamadas_auditoria_qa?
+
+  @@index([start_time])
+  @@index([agent_name])
+}
+
+model chamadas_dados_extraidos {
+  call_sid           String   @id @db.VarChar(50)
+  cpf                String?  @db.VarChar(20)
+  telefone_informado String?  @db.VarChar(20)
+  motivo_contato     String?  @db.VarChar(255)
+  agente_transferido String?  @db.VarChar(50)
+  nota_atendimento   Int?
+
+  chamada            chamadas @relation(fields: [call_sid], references: [call_sid])
+}
+
+model chamadas_mensagens {
+  id                 Int      @id @default(autoincrement())
+  call_sid           String?  @db.VarChar(50)
+  role               String?  @db.VarChar(10)
+  time_in_call_secs  Int?
+  message            String?
+
+  chamada            chamadas? @relation(fields: [call_sid], references: [call_sid])
+
+  @@index([call_sid])
+}
+
+model chamadas_auditoria_qa {
+  call_sid                           String   @id @db.VarChar(50)
+  cpf_identificado                   String?  @db.VarChar(20)
+  nome_cliente                       String?  @db.VarChar(255)
+  motivo_contato                     String?  @db.VarChar(100)
+  transferiu_para_humano             Boolean?
+  ferramenta_utilizada               Boolean?
+  dados_falados_conferem_com_sistema Boolean?
+  divergencias_encontradas           String?
+  saudacao_correta                   Boolean?
+  evitou_palavras_proibidas          Boolean?
+  fez_validacao_seguranca            Boolean?
+  confirmou_email_antes_envio        Boolean?
+  respeitou_regras_transferencia     Boolean?
+  vazou_dados_sensiveis              Boolean?
+  nota_atendimento                   Decimal? @db.Decimal(5,2)
+  justificativa_nota                 String?
+  sugestoes                          Json?
+  data_auditoria                     DateTime? @default(now()) @db.Timestamp(6)
+
+  chamada                            chamadas @relation(fields: [call_sid], references: [call_sid])
+}
+
+model usuarios {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome               String    @map("name") @db.VarChar(150)
+  email              String    @unique @db.VarChar(255)
+  senha_hash         String    @map("password_hash")
+  ativo              Boolean   @default(true) @map("is_active")
+  email_verificado   Boolean   @default(false) @map("email_verified")
+  tentativas_login   Int       @default(0) @map("failed_login_attempts")
+  bloqueado_ate      DateTime? @map("locked_until") @db.Timestamp(6)
+  ultimo_login_em    DateTime? @map("last_login_at") @db.Timestamp(6)
+  senha_alterada_em  DateTime  @default(now()) @map("password_changed_at") @db.Timestamp(6)
+  criado_em          DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  atualizado_em      DateTime  @default(now()) @map("updated_at") @db.Timestamp(6)
+  deletado_em        DateTime? @map("deleted_at") @db.Timestamp(6)
+
+  @@index([email])
+}
